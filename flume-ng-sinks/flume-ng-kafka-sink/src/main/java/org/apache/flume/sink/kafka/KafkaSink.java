@@ -76,6 +76,8 @@ public class KafkaSink extends AbstractSink implements Configurable {
   private List<KeyedMessage<String, byte[]>> messageList;
   private KafkaSinkCounter counter;
 
+  private static final String BACKOFF_SLEEP_MILLISECOND = "backoffSleepMillisecond";
+  private static final int DEFUALT_BACKOFF_SLEEP_MILLISECOND = 0;
 
   @Override
   public Status process() throws EventDeliveryException {
@@ -85,6 +87,7 @@ public class KafkaSink extends AbstractSink implements Configurable {
     Event event = null;
     String eventTopic = null;
     String eventKey = null;
+    boolean isNoEventMore = false;
 
     try {
       long processedEvents = 0;
@@ -98,6 +101,7 @@ public class KafkaSink extends AbstractSink implements Configurable {
 
         if (event == null) {
           // no events available in channel
+          isNoEventMore = true;
           break;
         }
 
@@ -133,6 +137,14 @@ public class KafkaSink extends AbstractSink implements Configurable {
       }
 
       transaction.commit();
+      
+      if (isNoEventMore) {
+       try {
+        Thread.sleep(bakoffSleepMillisecond);
+       } catch (InterruptedException e) {
+        // TODO: handle exception
+        }
+      }
 
     } catch (Exception ex) {
       String errorMsg = "Failed to publish events";
