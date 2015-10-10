@@ -73,6 +73,7 @@ public class KafkaSink extends AbstractSink implements Configurable {
   private Producer<String, byte[]> producer;
   private String topic;
   private int batchSize;
+  private int bakoffSleepMillisecond;
   private List<KeyedMessage<String, byte[]>> messageList;
   private KafkaSinkCounter counter;
 
@@ -85,6 +86,7 @@ public class KafkaSink extends AbstractSink implements Configurable {
     Event event = null;
     String eventTopic = null;
     String eventKey = null;
+    boolean isNoEventMore = false;
 
     try {
       long processedEvents = 0;
@@ -98,6 +100,7 @@ public class KafkaSink extends AbstractSink implements Configurable {
 
         if (event == null) {
           // no events available in channel
+          isNoEventMore = true;
           break;
         }
 
@@ -133,6 +136,13 @@ public class KafkaSink extends AbstractSink implements Configurable {
       }
 
       transaction.commit();
+      
+      if (isNoEventMore) {
+       try {
+        Thread.sleep(bakoffSleepMillisecond);
+       } catch (InterruptedException e) {
+       }
+      }
 
     } catch (Exception ex) {
       String errorMsg = "Failed to publish events";
@@ -193,6 +203,8 @@ public class KafkaSink extends AbstractSink implements Configurable {
 
     batchSize = context.getInteger(KafkaSinkConstants.BATCH_SIZE,
       KafkaSinkConstants.DEFAULT_BATCH_SIZE);
+    bakoffSleepMillisecond = context.getInteger(KafkaSinkConstants.BACKOFF_SLEEP_MILLISECOND, 
+      KafkaSinkConstants.DEFUALT_BACKOFF_SLEEP_MILLISECOND);
     messageList =
       new ArrayList<KeyedMessage<String, byte[]>>(batchSize);
     logger.debug("Using batch size: {}", batchSize);
