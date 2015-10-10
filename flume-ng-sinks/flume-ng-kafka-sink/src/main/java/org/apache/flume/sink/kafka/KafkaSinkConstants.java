@@ -28,6 +28,8 @@ public class KafkaSinkConstants {
 
   public static final String TOPIC = "topic";
   public static final String BATCH_SIZE = "batchSize";
+  public static final String BACKOFF_SLEEP_MILLISECOND = "backoffSleepMillisecond";
+  public static final int DEFUALT_BACKOFF_SLEEP_MILLISECOND = 0;
   public static final String MESSAGE_SERIALIZER_KEY = "serializer.class";
   public static final String KEY_SERIALIZER_KEY = "key.serializer.class";
   public static final String BROKER_LIST_KEY = "metadata.broker.list";
